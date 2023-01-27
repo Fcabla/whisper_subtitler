@@ -8,6 +8,12 @@ Generate transcriptions and subtitles using OpenAI whisper as a base model, stab
 4. Form final results with post processing (fix output by punctuation, etc.)
 5. Output results
 
+## Limitations
+* The main limitations besides inference time (depending on the selected model) its the overlapping speakers. When 2 or more speakers speaks at the same time, whisper just outputs the transcription of one speaker. Also, the diarization models can output sequences that overlapp bethween each other, but whisper will just output one token for a given timestamp. You can end in a situation where you have one token and multiple possible speakers.
+* Untested in different languages, but should work.
+* Untested in longer audio/video files. Maybe would be a good idea to split files into smaller chunks if this is a problem.
+
+
 ## TODO
 * ~~First approach with stable-ts whisper and pyannote~~
 * ~~User interface using streamlit~~
