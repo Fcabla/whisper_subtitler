@@ -23,3 +23,4 @@ Generate transcriptions and subtitles using OpenAI whisper as a base model, stab
 * Alternative pipeline with Nvidia NEMO
 * Alternative pipeline with stable-ts/whisperx and speech separation (instead of diarization)
 * Include translation to the pipeline
+* Add demo video

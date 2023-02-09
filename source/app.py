@@ -13,12 +13,18 @@ if 'source_type' not in st.session_state:
     st.session_state.source_type = None
 if 'input_source' not in st.session_state:
     st.session_state.input_source = None
+if 'source_lan' not in st.session_state:
+    st.session_state.source_lan = None
 if 'model_version' not in st.session_state:
     st.session_state.model_version = None
 if 'use_diarization' not in st.session_state:
     st.session_state.use_diarization = None
+if 'num_speakers' not in st.session_state:
+    st.session_state.num_speakers = None
 if 'transcription_results' not in st.session_state:
     st.session_state.transcription_results = None
+if 'output_raw_text' not in st.session_state:
+    st.session_state.output_raw_text = None
 if 'output_srt' not in st.session_state:
     st.session_state.output_srt = None
 if 'output_video' not in st.session_state:
@@ -66,8 +72,10 @@ with st.sidebar:
     elif input_source_type == 'Upload file':
         st.session_state.input_source = st.file_uploader('Upload your file', type=['wav', 'mp3', 'mp4'])
     load_input_source = st.button(label='Load input source')
+    st.session_state.source_lan = st.selectbox(label='Select language', options=['unk','en','es'], index=1)
     st.session_state.model_version = st.selectbox(label='Select model version', options=['tiny','base','small','medium', 'large'], index=3)
     st.session_state.use_diarization = st.checkbox(label='Diarization', value=True)
+    st.session_state.num_speakers = st.number_input(label='Number of speakers', min_value=0, max_value=5, value=1, help='Input 0 if number of speakers not known', )
     transcribe_button = st.button(label='Start transcription')
 
 #############
@@ -96,11 +104,14 @@ st.header("Transcription")
 if transcribe_button:
     if st.session_state.original_file and st.session_state.source_type:
         print(st.session_state.original_file, st.session_state.source_type)
-        transcription_results, output_srt, output_video = transcriber_sw.pipeline(original_file=st.session_state.original_file, 
-                                                                                    source_type=st.session_state.source_type, 
-                                                                                    model_type=st.session_state.model_version, 
-                                                                                    use_diarization=st.session_state.use_diarization)
+        transcription_results, output_raw_text, output_srt, output_video = transcriber_sw.pipeline(original_file=st.session_state.original_file, 
+                                                                                                source_type=st.session_state.source_type,
+                                                                                                source_lan=st.session_state.source_lan, 
+                                                                                                model_type=st.session_state.model_version, 
+                                                                                                use_diarization=st.session_state.use_diarization,
+                                                                                                num_speakers=st.session_state.num_speakers)
         st.session_state.transcription_results = transcription_results
+        st.session_state.output_raw_text = output_raw_text
         st.session_state.output_srt = output_srt
         st.session_state.output_video = output_video
     else:
@@ -110,6 +121,9 @@ if transcribe_button:
 if st.session_state.transcription_results:
     for elem in st.session_state.transcription_results:
         st.text(elem)
+if st.session_state.output_raw_text:
+    srt_bytes = open(st.session_state.output_raw_text, 'rb').read() 
+    st.download_button(label='Download raw transcription file', data=srt_bytes, file_name='raw_transcription.txt', mime='text/txt')
 if st.session_state.output_video:
     video_bytes = open(st.session_state.output_video, 'rb').read() 
     st.video(video_bytes, format='video/mp4') #displaying the video

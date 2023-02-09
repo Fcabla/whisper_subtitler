@@ -12,10 +12,16 @@ from pyannote.audio import Pipeline
 import stable_whisper as sw
 import ffmpeg
 
-def diarizate_audio_file(diarization, input_file, store_folder, nspeakers=2, store_intermediate_results_folder=None):
+DEVICE = "cuda" #torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+def diarizate_audio_file(diarization, input_file, nspeakers=0, store_intermediate_results_folder=None):
     # Running pyannote.audio to generate the diarizations.
     DEMO_FILE = {'uri': 'blabla', 'audio': input_file}
-    dz = diarization(DEMO_FILE, num_speakers=nspeakers) 
+    if nspeakers == 0:
+        # guess number of speakersW
+        dz = diarization(DEMO_FILE) 
+    else:
+        dz = diarization(DEMO_FILE, num_speakers=nspeakers) 
     result = []
     for turn, _, speaker in dz.itertracks(yield_label=True):
         result.append({
@@ -35,7 +41,9 @@ def diarizate_audio_file(diarization, input_file, store_folder, nspeakers=2, sto
             dz.write_rttm(rttm)
     return result
 
-def perform_transcription(transcriber, input_file, lang='en'):
+def perform_transcription(transcriber, input_file, lang='unk'):
+    if lang == 'unk':
+        lang = None
     #results = transcriber.transcribe(AUDIO_FILE, fp16=True, language='en', suppress_silence=False, ts_num=16)
     results = transcriber.transcribe(input_file, fp16=False, language=lang)
     
@@ -89,15 +97,6 @@ def speaker_recognition(results_transcriptions, dz, unk_strat='closest'):
             word.set_speaker(unk_candidate['speaker'])
             
     return results_transcriptions
-
-def get_result_text(transcription, use_diarization):
-    
-    if use_diarization:
-        pass
-    else:
-        for x in transcription['segments']:
-            pass
-
 
 def paint_results(words):
     spk_colors = {0:rc.bcolors.OKBLUE,1:rc.bcolors.OKGREEN,2:rc.bcolors.WARNING,3:rc.bcolors.HEADER}
@@ -173,7 +172,7 @@ def burn_subtitles(input_file, source_type, input_srt, output_video):
     #ffmpeg -i mymovie.mp4 -vf ass=subtitles.ass mysubtitledmovie.mp4
 
 
-def pipeline(original_file, source_type, model_type, use_diarization):
+def pipeline(original_file, source_type, source_lan, model_type, use_diarization, num_speakers):
     # Start measure time
     start_t = time.time()
 
@@ -192,16 +191,17 @@ def pipeline(original_file, source_type, model_type, use_diarization):
     ap.add_init_spacer(input_file=last_audiofile, output_file=last_audiofile)
     print(2)
     # 3. Load whisper model from stable whisper and inference
-    transcriber = sw.load_model(model_type)
+    transcriber = sw.load_model(model_type, device=DEVICE)
     print('a')
-    results_transcriptions, transcription = perform_transcription(transcriber=transcriber, input_file=last_audiofile, lang='en')
+    results_transcriptions, transcription = perform_transcription(transcriber=transcriber, input_file=last_audiofile, lang=source_lan)
+    raw_transcripted_text = transcription['text']
     print(3)
     if use_diarization:
         # 4. Diarization. Load diarization model
         diarization = Pipeline.from_pretrained('pyannote/speaker-diarization@2.1', use_auth_token=tk.hf_token)
         # Perform the diarization and store it in a txt file
         # TODO: FIGURE OUT NUM OF SPEAKERS (MIN AND MAX) if not provided
-        dz = diarizate_audio_file(diarization, input_file=last_audiofile, store_folder=temp_folder, nspeakers=2, store_intermediate_results_folder=temp_folder)
+        dz = diarizate_audio_file(diarization, input_file=last_audiofile, nspeakers=num_speakers, store_intermediate_results_folder=temp_folder)
         
         # 5. Speaker recognition. Align timestamps from whisper and diarization.
         results = speaker_recognition(results_transcriptions, dz, unk_strat='closest')
@@ -237,6 +237,12 @@ def pipeline(original_file, source_type, model_type, use_diarization):
     #[print(sentence) for sentence in final_transcription_sentences]
 
     # 5. Form final results
+
+    # raw text
+    output_raw_text = os.path.join(output_folder, 'raw_transcription.txt')
+    with open(output_raw_text, 'w') as f:
+        f.write(raw_transcripted_text)
+    
     transcripted_text = []
     with open(os.path.join(output_folder, 'transcription.txt'), 'w') as f:
         for sentence in final_transcription_sentences:
@@ -258,7 +264,7 @@ def pipeline(original_file, source_type, model_type, use_diarization):
     end_t = time.time() - start_t
     print(f'Inference time with unk device: {end_t}')
 
-    return transcripted_text, output_srt, output_video
+    return transcripted_text, output_raw_text, output_srt, output_video
 
 if __name__ =='__main__':
     print(pipeline(original_file='input/original.mp4', source_type='audio', model_type='medium', use_diarization=False))
