@@ -5,9 +5,8 @@ First pipeline proposed. Stable ts + whisper + pydub + align timestamps from tra
 import utils.token_keys as tk
 import utils.audio_procesing as ap
 import utils.representation_classes as rc
-import os, datetime, shutil
+import os, datetime, shutil, time
 from pysrt import SubRipFile, SubRipTime, SubRipItem
-import time
 from pyannote.audio import Pipeline
 import stable_whisper as sw
 import ffmpeg
@@ -240,11 +239,11 @@ def pipeline(original_file, source_type, source_lan, model_type, use_diarization
 
     # raw text
     output_raw_text = os.path.join(output_folder, 'raw_transcription.txt')
-    with open(output_raw_text, 'w') as f:
+    with open(output_raw_text, 'w', encoding='utf-8') as f:
         f.write(raw_transcripted_text)
     
     transcripted_text = []
-    with open(os.path.join(output_folder, 'transcription.txt'), 'w') as f:
+    with open(os.path.join(output_folder, 'transcription.txt'), 'w', encoding='utf-8') as f:
         for sentence in final_transcription_sentences:
             transcripted_text.append(f'[{sentence.start_sent}-{sentence.end_sent}] {sentence.spk_text}')
             f.write(sentence.spk_text)
@@ -261,10 +260,17 @@ def pipeline(original_file, source_type, source_lan, model_type, use_diarization
     burn_subtitles(input_file=original_file, source_type=source_type, input_srt=os.path.join(output_folder, 'transcription.srt'), output_video=output_video)
 
     # End measure time
-    end_t = time.time() - start_t
-    print(f'Inference time with unk device: {end_t}')
+    exec_time = time.time() - start_t
+    print(f'Inference time with unk device: {exec_time}')
 
-    return transcripted_text, output_raw_text, output_srt, output_video
+    result_object = {
+        'transcripted_text': transcripted_text,
+        'output_raw_text': output_raw_text,
+        'output_srt': output_srt,
+        'output_video': output_video,
+        'exec_time': exec_time
+    }
+    return result_object
 
 if __name__ =='__main__':
     print(pipeline(original_file='input/original.mp4', source_type='audio', model_type='medium', use_diarization=False))

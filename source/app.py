@@ -1,7 +1,7 @@
 import streamlit as st
 from pytube import YouTube
 import io
-import transcriber_sw
+import transcriber_sw, transcriber_wx
 INPUT_PATH = 'input/'
 #@st.cache(suppress_st_warning=True)
 # sidebar
@@ -21,8 +21,8 @@ if 'use_diarization' not in st.session_state:
     st.session_state.use_diarization = None
 if 'num_speakers' not in st.session_state:
     st.session_state.num_speakers = None
-if 'transcription_results' not in st.session_state:
-    st.session_state.transcription_results = None
+if 'transcripted_text' not in st.session_state:
+    st.session_state.transcripted_text = None
 if 'output_raw_text' not in st.session_state:
     st.session_state.output_raw_text = None
 if 'output_srt' not in st.session_state:
@@ -104,30 +104,40 @@ st.header("Transcription")
 if transcribe_button:
     if st.session_state.original_file and st.session_state.source_type:
         print(st.session_state.original_file, st.session_state.source_type)
-        transcription_results, output_raw_text, output_srt, output_video = transcriber_sw.pipeline(original_file=st.session_state.original_file, 
-                                                                                                source_type=st.session_state.source_type,
-                                                                                                source_lan=st.session_state.source_lan, 
-                                                                                                model_type=st.session_state.model_version, 
-                                                                                                use_diarization=st.session_state.use_diarization,
-                                                                                                num_speakers=st.session_state.num_speakers)
-        st.session_state.transcription_results = transcription_results
-        st.session_state.output_raw_text = output_raw_text
-        st.session_state.output_srt = output_srt
-        st.session_state.output_video = output_video
+        result_object = transcriber_wx.pipeline(original_file=st.session_state.original_file, 
+                                                source_type=st.session_state.source_type,
+                                                source_lan=st.session_state.source_lan, 
+                                                model_type=st.session_state.model_version, 
+                                                use_diarization=st.session_state.use_diarization,
+                                                num_speakers=st.session_state.num_speakers)
+
+        # Collect results
+        st.session_state.transcripted_text = result_object['transcripted_text']
+        st.session_state.output_raw_text = result_object['output_raw_text']
+        st.session_state.output_srt = result_object['output_srt']
+        st.session_state.output_video = result_object['output_video']
+
     else:
         st.error('Remember to input the audio or video and click in the "Load input source"', icon="🚨")
 
 #show results
-if st.session_state.transcription_results:
-    for elem in st.session_state.transcription_results:
-        st.text(elem)
-if st.session_state.output_raw_text:
-    srt_bytes = open(st.session_state.output_raw_text, 'rb').read() 
-    st.download_button(label='Download raw transcription file', data=srt_bytes, file_name='raw_transcription.txt', mime='text/txt')
+    
 if st.session_state.output_video:
+    st.subheader('Result Media')
     video_bytes = open(st.session_state.output_video, 'rb').read() 
     st.video(video_bytes, format='video/mp4') #displaying the video
     st.download_button(label='Download video file', data=video_bytes, file_name='video_result_transcription.mp4', mime='video/mp4')
+
+if st.session_state.output_raw_text:
+    st.subheader('Raw transcription')
+    raw_text_bytes = open(st.session_state.output_raw_text, 'rb').read()
+    st.markdown(raw_text_bytes.decode('utf-8'))
+    st.download_button(label='Download raw transcription file', data=raw_text_bytes, file_name='raw_transcription.txt', mime='text/txt')
+
+if st.session_state.transcripted_text:
+    st.subheader('Timestamped transcription')
+    for elem in st.session_state.transcripted_text:
+        st.markdown(elem)
 if st.session_state.output_srt:
     srt_bytes = open(st.session_state.output_srt, 'rb').read() 
     st.download_button(label='Download srt file', data=srt_bytes, file_name='transcription.srt', mime='text/plain')
