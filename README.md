@@ -17,10 +17,12 @@ Generate transcriptions and subtitles using OpenAI whisper as a base model, stab
 ## TODO
 * ~~First approach with stable-ts whisper and pyannote~~
 * ~~User interface using streamlit~~
-* Alternative pipeline with whisperx and pyannote
-* Alternative pipeline with whisperx (timestamp stabilizer + custom diarization)
+* ~~Alternative pipeline with whisperx and pyannote~~
+* ~~Alternative pipeline with whisperx (timestamp stabilizer + custom diarization)~~
+* ~~Pipeline with whisperx as timestamp stabilizer + VAD + diarization~~
 * Include audio processing (Silero VAD, audio enhancer with espnet or similar)
-* Alternative pipeline with Nvidia NEMO
+* Try pipeline with Nvidia NEMO
+* Implement speech separation
 * Alternative pipeline with stable-ts/whisperx and speech separation (instead of diarization)
 * Include translation to the pipeline
 * Add demo video
