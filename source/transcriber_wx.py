@@ -91,7 +91,7 @@ def burn_subtitles(input_file, source_type, input_srt, output_video):
 ################
 ### PIPELINE ###
 ################
-def pipeline(original_file, source_type, source_lan, model_type, use_diarization, num_speakers):
+def pipeline(original_file, source_type, source_lan, model_type, use_diarization, num_speakers, translate_to_english):
 
     # Start measure time
     start_t = time.time()
@@ -134,6 +134,10 @@ def pipeline(original_file, source_type, source_lan, model_type, use_diarization
     if THREADS > 0:
         torch.set_num_threads(THREADS)
 
+    whisper_task = 'transcribe'
+    if translate_to_english and source_lan != 'en':
+        whisper_task = 'translate'
+
     # 3.4 Load Whisper model
     model = load_model(model_type, device=DEVICE, download_root=MODEL_DIR)
 
@@ -149,11 +153,11 @@ def pipeline(original_file, source_type, source_lan, model_type, use_diarization
         if PARALLEL_BS > 1:
             print("Performing VAD and parallel transcribing ...")
             #result = transcribe_with_vad_parallel(model, audio_path, vad_pipeline, temperature=temperature, batch_size=parallel_bs, **args)
-            result = transcribe_with_vad_parallel(model, last_audiofile, vad_pipeline, temperature=temperature, batch_size=PARALLEL_BS)
+            result = transcribe_with_vad_parallel(model, last_audiofile, vad_pipeline, temperature=temperature, batch_size=PARALLEL_BS, task=whisper_task)
         else:
             print("Performing VAD...")
             #result = transcribe_with_vad(model, audio_path, vad_pipeline, temperature=temperature, **args)
-            result = transcribe_with_vad(model, last_audiofile, vad_pipeline, temperature=temperature)
+            result = transcribe_with_vad(model, last_audiofile, vad_pipeline, temperature=temperature, task=whisper_task)
     else:
         print("Performing transcription...")
         result = transcribe(model, last_audiofile, temperature=temperature)
@@ -197,7 +201,10 @@ def pipeline(original_file, source_type, source_lan, model_type, use_diarization
     transcripted_text = []
     with open(os.path.join(output_folder, 'transcription.txt'), 'w', encoding='utf-8') as f:
         for sentence in result_aligned["segments"]:
-            spk_text = f'{sentence["speaker"]}: {sentence["text"]}'
+            if use_diarization:
+                spk_text = f'{sentence["speaker"]}: {sentence["text"]}'
+            else:
+                spk_text = f'{sentence["text"]}'
             sent_start = round(sentence["start"], 3)
             sent_end = round(sentence["end"], 3)
             transcripted_text.append(f'[{sent_start}-{sent_end}] {spk_text}')
@@ -285,4 +292,4 @@ def pipeline(original_file, source_type, source_lan, model_type, use_diarization
     """
 
 if __name__ =='__main__':
-    pipeline(original_file='input/audio.mp4', source_type='video', source_lan = 'en', model_type='medium', use_diarization=True, num_speakers=2)
+    pipeline(original_file='input/original.mp4', source_type='video', source_lan = 'en', model_type='medium', use_diarization=True, num_speakers=2)

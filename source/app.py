@@ -15,6 +15,8 @@ if 'input_source' not in st.session_state:
     st.session_state.input_source = None
 if 'source_lan' not in st.session_state:
     st.session_state.source_lan = None
+if 'translate_to_english' not in st.session_state:
+    st.session_state.translate_to_english = None
 if 'model_version' not in st.session_state:
     st.session_state.model_version = None
 if 'use_diarization' not in st.session_state:
@@ -73,7 +75,9 @@ with st.sidebar:
         st.session_state.input_source = st.file_uploader('Upload your file', type=['wav', 'mp3', 'mp4'])
     load_input_source = st.button(label='Load input source')
     st.session_state.source_lan = st.selectbox(label='Select language', options=['unk','en','es'], index=1)
-    st.session_state.model_version = st.selectbox(label='Select model version', options=['tiny','base','small','medium', 'large'], index=3)
+    if st.session_state.source_lan != 'en':
+        st.session_state.translate_to_english = st.checkbox(label='Translate to english', value=False)
+    st.session_state.model_version = st.selectbox(label='Select model version', options=['tiny','base','small','medium', 'large', 'large-v2'], index=3)
     st.session_state.use_diarization = st.checkbox(label='Diarization', value=True)
     st.session_state.num_speakers = st.number_input(label='Number of speakers', min_value=0, max_value=5, value=1, help='Input 0 if number of speakers not known', )
     transcribe_button = st.button(label='Start transcription')
@@ -109,7 +113,8 @@ if transcribe_button:
                                                 source_lan=st.session_state.source_lan, 
                                                 model_type=st.session_state.model_version, 
                                                 use_diarization=st.session_state.use_diarization,
-                                                num_speakers=st.session_state.num_speakers)
+                                                num_speakers=st.session_state.num_speakers,
+                                                translate_to_english=st.session_state.translate_to_english)
 
         # Collect results
         st.session_state.transcripted_text = result_object['transcripted_text']
