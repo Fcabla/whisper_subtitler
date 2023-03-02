@@ -1,7 +1,20 @@
 # whisper_subtitler
-Generate transcriptions and subtitles using OpenAI whisper as a base model, stable-ts/whisperx as a timestamp stabilizer using ASR models and pyannote/nemo models in order to identify different speakers.
+Generate transcriptions and subtitles using OpenAI whisper as a base model, [stable-ts](https://github.com/jianfch/stable-ts) or [whisperx](https://github.com/m-bain/whisperX) as a timestamp stabilizer using ASR models and [pyannote](https://github.com/pyannote/pyannote-audio) / nemo models in order to identify different speakers.
 
-## Current pipeline
+<video width="320" height="240" controls>
+  <source src="docs/demo.mp4" type="video/mp4">
+</video>
+
+
+## Current pipeline (transcriber_wx | whisperx)
+1. Read and preprocess the input file (video or audio)
+2. Load models: pyannote Voice Activity Detection (VAD), pyannote diarization, whisper, align-model (wav2vec2.0)
+3. Transcribe input using VAD and whisper
+4. Run alignment model to stabilize the timestamps from whisper
+5. Perform diarization
+5. Form final results and output.
+
+## Previous pipeline (transcriber_sw | stable-whisper)
 1. Read and preprocess the input file (video or audio)
 2. Load whisper + timestamp stabilizer and inference with the input file
 3. Load diarization model and run model (if selected by the user) with the input file
@@ -25,4 +38,4 @@ Generate transcriptions and subtitles using OpenAI whisper as a base model, stab
 * Implement speech separation
 * Alternative pipeline with stable-ts/whisperx and speech separation (instead of diarization)
 * Include translation to the pipeline
-* Add demo video
+* ~~Add demo video~~
