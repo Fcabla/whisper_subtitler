@@ -2,7 +2,7 @@
 Generate transcriptions and subtitles using OpenAI whisper as a base model, [stable-ts](https://github.com/jianfch/stable-ts) or [whisperx](https://github.com/m-bain/whisperX) as a timestamp stabilizer using ASR models and [pyannote](https://github.com/pyannote/pyannote-audio) / nemo models in order to identify different speakers.
 
 <video width="320" height="240" controls>
-  <source src="https://github.com/Fcabla/whisper_subtitler/blob/main/docs/demo.mp4?raw=true" type="video/mp4">
+  <source src="docs/demo_smaller.mp4" type="video/mp4">
 </video>
 
 
